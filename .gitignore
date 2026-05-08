@@ -1,0 +1,4 @@
+venv/
+fake_survey_responses.csv
+composite_scores.csv
+target_scores.csv
