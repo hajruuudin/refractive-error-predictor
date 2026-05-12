@@ -1,4 +1,4 @@
-# For testing purposes for the model logic and initial data analysis without
+# For testing purposes of the model logic and initial data analysis without
 # having to wait for the survey responses, we will be faking the actual data
 # using Numpy and Pandas.
 
@@ -13,7 +13,7 @@ import pandas as pd;
 # For purpose of consistency, this generates the exact same random outputs each time when
 # testing this codebase.
 np.random.seed(42)
-N = 100;
+N = 500;
 
 # Each response here aligns to a question from the survey.
 fake_responses = pd.DataFrame({
@@ -34,7 +34,7 @@ fake_responses = pd.DataFrame({
     'genetics': np.random.choice([1,2,3,4,5], N, p=[0.20, 0.20, 0.20, 0.20, 0.20]),
     'age_first_rx': np.random.choice([0,6,8,10,12,14,16,18,20], N),
     # --- TARGET VARIABLES --- #
-    'myopia_level': np.random.choice([0,1,2,3,4], N, p=[0.25, 0.30, 0.25, 0.15, 0.05]),
+    'myopia_level': np.random.choice([0,1,2,3,4,5], N, p=[0.15, 0.20, 0.30, 0.20, 0.10, 0.05]),
     'refractive_worsening': np.random.choice([0,1,2,3], N, p=[0.30, 0.35, 0.25, 0.10]),
     'cvs_headache_strain': np.random.choice([0,1,2,3,4], N),
     'cvs_dry_eyes': np.random.choice([0,1,2,3,4], N),

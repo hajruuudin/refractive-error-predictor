@@ -2,3 +2,5 @@ venv/
 fake_survey_responses.csv
 composite_scores.csv
 target_scores.csv
+machine_learning_scripts/model_results/
+machine_learning_scripts/training_data_smote.csv
