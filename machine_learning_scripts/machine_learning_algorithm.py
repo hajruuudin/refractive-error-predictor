@@ -10,7 +10,6 @@ This script trains multiple ML models on the SMOTE-balanced survey data to predi
 Models trained:
 - Random Forest
 - XGBoost
-- Gradient Boosting
 
 Evaluation metrics:
 - Mean Absolute Error (MAE)
