@@ -1,26 +1,42 @@
 """
-SMOTE for Machine Learning Pipeline
+PART 01: SMOTE for Machine Learning Pipeline
 
-For the ML model, we start with the raw 15 input variables (normalized 0-1) and 
-apply SMOTE to balance the dataset across target variables. Unlike the linear model,
-the ML model learns weights from data, so we need sufficient balanced samples.
+For the ML model, SMOTE is required due to the expected small size in the dataset, as well as to fix underlying imbalance problems
+for the minority classes. The following script evens out the dataset and prepares three individual CSV files 
+which are later used as data inputs for the ML model training, each of which are extended
+based on one of the three expected target variables (MYOPIA, CSV OR ASTIGMATISM). The reason why we create three individual
+dataset instead of using K-Nearest-Neighbour for the missing target data is due to the small size of the input survey. This is
+to avoid noisy data and inaccurate/non-sensible values for the remaining target variables.
 
-Pipeline:
-1. Load 500 fake survey responses
-2. Normalize 15 input variables to 0-1
-3. Create target variable for balancing (primary outcome)
-4. Apply SMOTE to balance across target classes
-5. Export balanced dataset for ML model training
+The following script works in the steps in order:
+    1. Load the original CSV file containing the survey samples (or the fake responses just for testing purposes)
+    2. The inputs are normalised, so that the values are not categorical but rather all ordinal from 0.0 to 1.0
+    3. The target columns are aggregated so that we have 3 targets instead of 5
+    4. Then, the SMOTE process is applied three consecutive times, all separate
+        First for Myopia, then for CVS and then or Astigmatism
+    5. SMOTE is set up so that the K-neighbours variables is by default 3, however, can
+        drop to 2 if the minority class does not have enough instances (can cause detriments to the effect tho)
+    6. The process is repeated 3 times, once for each target
+    7. The result is three CSV files. Each of them is used later for training of ML models.
+
+Some things to note:
+    - The functions that aggregate the 5 target variables into three are as follows:
+        - For Myopia: It is the average of the current nearsightedness score and the worsening of the individuals eyesight in the last 2 years
+        - For Computer Vision Syndrome: It is the average of the frequency of experiencing headaches and digital strain
+        - For astigmatism: It is the astigmatism symptoms with an addition of 10% of the users nearsightedness score
+      Each of the formulas can be changed and it changes the overall target
+    - In this current setup, there is no usage of K-Nearest-Neighbour. The reason for this is the lack
+      of size in the input survey. A usage of KNN would mean narrowing the dataset down into one cohesive
+      dataset, where the SMOTE process is used only with Myopia Score as the target, with the remaining
+      null columns for CVS ans Astigmatism being filled in using KNN.
 """
 
 import pandas as pd
 import numpy as np
 from imblearn.over_sampling import SMOTE
-from sklearn.neighbors import NearestNeighbors
 import os
 
 def normalize_column(col):
-    """Normalize a column to 0-1 range"""
     min_val = col.min()
     max_val = col.max()
     if max_val == min_val:
@@ -28,51 +44,21 @@ def normalize_column(col):
     return (col - min_val) / (max_val - min_val)
 
 def get_valid_normalized_values(col):
-    """
-    Get all valid normalized values for an ordinal column.
-    
-    For ordinal variables, after normalization, only discrete values are valid.
-    E.g., for 1-5 scale: [0.0, 0.25, 0.5, 0.75, 1.0]
-    E.g., for 0-8 scale: [0.0, 0.125, 0.25, ..., 1.0]
-    
-    Args:
-        col: Original (non-normalized) column with min/max values
-    
-    Returns:
-        Array of valid normalized values for this column
-    """
     min_val = col.min()
     max_val = col.max()
     
     if max_val == min_val:
         return np.array([0.5])
     
-    # Generate all possible values from min to max
     possible_original_values = np.arange(min_val, max_val + 1)
     
-    # Normalize them
     valid_normalized = (possible_original_values - min_val) / (max_val - min_val)
     
     return valid_normalized
 
 def round_to_valid_values(synthetic_data, original_df):
-    """
-    Round SMOTE-generated synthetic values to nearest valid ordinal values.
-    
-    SMOTE interpolates between points, which can create invalid values.
-    This function rounds each synthetic value to the nearest valid discrete value
-    that could exist in the original data.
-    
-    Args:
-        synthetic_data: DataFrame with synthetic values (0-1 normalized, may have invalid values)
-        original_df: Original DataFrame to extract valid value ranges
-    
-    Returns:
-        DataFrame with rounded synthetic data (valid ordinal values only)
-    """
     rounded_data = synthetic_data.copy()
-    
-    # Get input columns (exclude targets)
+
     input_cols = [
         'age', 'gender', 'daily_screen_time', 'continuous_usage', 'intensity',
         'lighting', 'multi_device', 'phone_distance', 'monitor_distance',
@@ -80,34 +66,20 @@ def round_to_valid_values(synthetic_data, original_df):
         'genetics', 'age_first_rx'
     ]
     
-    # Need to denormalize, round to nearest valid value, then renormalize
     for col in input_cols:
         if col in synthetic_data.columns:
-            # Get valid normalized values for this column
             valid_values = get_valid_normalized_values(original_df[col])
             
-            # For each synthetic value, find nearest valid value
             for idx in rounded_data.index:
                 synthetic_val = rounded_data.loc[idx, col]
-                # Find nearest valid value
                 nearest_idx = np.argmin(np.abs(valid_values - synthetic_val))
                 rounded_data.loc[idx, col] = valid_values[nearest_idx]
     
     return rounded_data
 
 def load_and_normalize_inputs(csv_file):
-    """
-    Load survey responses and normalize the 15 input variables.
-    
-    Args:
-        csv_file: Path to fake_survey_responses.csv
-    
-    Returns:
-        DataFrame with normalized inputs (0-1) and target variables
-    """
     df = pd.read_csv(csv_file)
     
-    # Define the 15 input variables
     input_cols = [
         'age', 'gender', 'daily_screen_time', 'continuous_usage', 'intensity',
         'lighting', 'multi_device', 'phone_distance', 'monitor_distance',
@@ -115,118 +87,74 @@ def load_and_normalize_inputs(csv_file):
         'genetics', 'age_first_rx'
     ]
     
-    # Define the 5 target variables
-    target_cols = [
-        'myopia_level', 'refractive_worsening', 'cvs_headache_strain',
-        'cvs_dry_eyes', 'astigmatism_symptoms'
-    ]
-    
-    # Normalize input variables
     normalized_df = pd.DataFrame()
     for col in input_cols:
         normalized_df[col] = normalize_column(df[col])
     
-    # Add target variables (not normalized, kept as-is)
-    for col in target_cols:
-        normalized_df[col] = df[col]
+    normalized_df["myopia_score"] = (
+        df["myopia_level"] + df["refractive_worsening"]
+    ) / 2
+
+    normalized_df["cvs_score"] = (
+        df["cvs_headache_strain"] + df["cvs_dry_eyes"]
+    ) / 2
+
+    normalized_df["astigmatism_score"] = (
+        df["astigmatism_symptoms"] * (1 + df["myopia_level"] * 0.1)
+    )
     
     return normalized_df
 
-def apply_smote_for_ml(df, original_df, primary_target='myopia_level'):
-    """
-    Apply SMOTE to balance dataset across primary target variable.
-    
-    For synthetic samples created by SMOTE, use KNN to find k-nearest original samples
-    and assign their target values (averaged). This preserves realistic target relationships
-    without baking in assumptions from the linear model.
-    
-    Args:
-        df: DataFrame with normalized inputs (0-1) and targets
-        original_df: Original (non-normalized) DataFrame for KNN reference
-        primary_target: Which target to balance by (myopia_level, astigmatism_symptoms, etc.)
-    
-    Returns:
-        SMOTE-balanced DataFrame with realistic target values via KNN
-    """
-    # Store original (non-normalized) data for reference
-    # Define input and target columns
+def apply_smote_for_ml(df, primary_target):
     input_cols = [
         'age', 'gender', 'daily_screen_time', 'continuous_usage', 'intensity',
         'lighting', 'multi_device', 'phone_distance', 'monitor_distance',
         'blue_light_filter', 'before_bed_usage', 'profession', 'outdoor_activity',
         'genetics', 'age_first_rx'
     ]
-    target_cols = [
-        'myopia_level', 'refractive_worsening', 'cvs_headache_strain',
-        'cvs_dry_eyes', 'astigmatism_symptoms'
-    ]
-    
+
     X = df[input_cols].copy()
-    y = df[primary_target].copy()
-    X_original = original_df[input_cols].copy()
+    y_continuous = df[primary_target].copy()
     
+    # Convert continuous scores to ordinal integer classes (0 to 4)
+    bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    labels = [0, 1, 2, 3, 4]
+    y = pd.cut(y_continuous, bins=bins, labels=labels, include_lowest=True)
+    y = pd.factorize(y)[0]
+
     print(f"  Class distribution before SMOTE (using {primary_target}):")
-    print(f"  {y.value_counts().sort_index().to_dict()}")
+    print(f"  {pd.Series(y).value_counts().sort_index().to_dict()}")
     print(f"  Total samples: {len(df)}")
-    
-    # Dynamically set k_neighbors based on smallest class
-    min_class_size = y.value_counts().min()
+
+    min_class_size = pd.Series(y).value_counts().min()
     k_neighbors = max(1, min_class_size - 1)
     print(f"  Using k_neighbors={k_neighbors} for SMOTE")
-    
-    # Apply SMOTE
+
     smote = SMOTE(sampling_strategy='auto', random_state=42, k_neighbors=k_neighbors)
     X_resampled, y_resampled = smote.fit_resample(X, y)
-    
+
     print(f"  Class distribution after SMOTE:")
     print(f"  {pd.Series(y_resampled).value_counts().sort_index().to_dict()}")
     print(f"  Total samples after SMOTE: {len(X_resampled)}")
-    
-    # Round synthetic values to valid ordinal values
+
     print(f"  Rounding synthetic values to valid ordinal ranges...")
-    X_resampled = round_to_valid_values(X_resampled, original_df)
+    X_resampled = round_to_valid_values(X_resampled, df)
     print(f"  Rounding complete!")
-    
-    # Enforce constraints on normalized inputs (keep in 0-1 range)
+
     for col in input_cols:
         X_resampled[col] = np.clip(X_resampled[col], 0.0, 1.0)
-    
-    # Use KNN to assign target values from nearest original samples
-    print(f"  Assigning target values via KNN to nearest original samples...")
-    n_neighbors = min(5, len(X_original))  # Use up to 5 nearest neighbors
-    knn = NearestNeighbors(n_neighbors=n_neighbors, algorithm='auto')
-    knn.fit(X_original)
-    
-    # Find k-nearest neighbors for each synthetic sample
-    distances, indices = knn.kneighbors(X_resampled)
-    
-    # Initialize target arrays
-    target_arrays = {target: np.zeros(len(X_resampled)) for target in target_cols}
-    
-    # For each synthetic sample, average the target values of its k-nearest neighbors
-    for i in range(len(X_resampled)):
-        nearest_indices = indices[i]
-        for target in target_cols:
-            nearest_values = original_df.iloc[nearest_indices][target].values
-            target_arrays[target][i] = np.mean(nearest_values)
-    
-    print(f"  Target values assigned from {n_neighbors}-nearest neighbors!")
-    
-    # Reconstruct DataFrame with inputs and all targets
+
     balanced_df = pd.DataFrame(X_resampled, columns=input_cols)
-    for target in target_cols:
-        balanced_df[target] = target_arrays[target]
-    
+    balanced_df[primary_target] = y_resampled
+
     return balanced_df
 
 def main():
-    """
-    Generate SMOTE-balanced dataset for ML model training.
-    """
-    # Paths
     project_root = os.path.dirname(os.path.dirname(__file__))
     input_csv = os.path.join(project_root, 'fake_survey_responses.csv')
-    output_csv = os.path.join(os.path.dirname(__file__), 'training_data_smote.csv')
+    output_csv_myopia = os.path.join(os.path.dirname(__file__), 'training_data_smote_myopia.csv')
+    output_csv_computervs = os.path.join(os.path.dirname(__file__), 'training_data_smote_computervs.csv')
+    output_csv_astigmatism = os.path.join(os.path.dirname(__file__), 'training_data_smote_astigmatism.csv')
     
     if not os.path.exists(input_csv):
         print(f"Error: {input_csv} not found")
@@ -240,18 +168,20 @@ def main():
     df = load_and_normalize_inputs(input_csv)
     print(f"Loaded {len(df)} survey responses with 15 normalized inputs")
     
-    # Also load original for KNN reference
-    original_df = pd.read_csv(input_csv)
-    
-    print(f"\nApplying SMOTE with KNN-based target assignment...")
-    balanced_df = apply_smote_for_ml(df, original_df, primary_target='myopia_level')
+    print(f"\nApplying SMOTE with target: Myopia Score (Current Nearsightedness and Prescription Change)...")
+    myopia_balanced_df = apply_smote_for_ml(df, primary_target="myopia_score")
+    computervs_balanced_df = apply_smote_for_ml(df, primary_target="cvs_score")
+    astigmatism_balanced_df = apply_smote_for_ml(df, primary_target="astigmatism_score")
     
     print(f"\nSaving balanced dataset...")
-    balanced_df.to_csv(output_csv, index=False)
-    print(f"Saved to {output_csv}")
+    myopia_balanced_df.to_csv(output_csv_myopia, index=False)
+    computervs_balanced_df.to_csv(output_csv_computervs, index=False)
+    astigmatism_balanced_df.to_csv(output_csv_astigmatism, index=False)
+    
+    print(f"Saved individual datasets into respective CSV files")
     
     print("\n" + "=" * 70)
-    print("SMOTE processing complete! Dataset ready for ML model training.")
+    print("SMOTE processing complete! Dataset ready for individual ML model training.")
     print("=" * 70)
 
 if __name__ == "__main__":

@@ -1,4 +1,8 @@
-numpy;
-pandas;
-scikit-learn;
-imbalanced-learn;
+numpy
+pandas
+scikit-learn
+imbalanced-learn
+xgboost
+
+# System-level dependency for macOS (required for XGBoost):
+# Install with: brew install libomp
