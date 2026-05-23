@@ -32,7 +32,9 @@ Some things to note:
 """
 
 import pandas as pd
+import argparse
 import numpy as np
+from pathlib import Path
 from imblearn.over_sampling import SMOTE
 import os
 
@@ -92,12 +94,12 @@ def load_and_normalize_inputs(csv_file):
         normalized_df[col] = normalize_column(df[col])
     
     normalized_df["myopia_score"] = (
-        df["myopia_level"] + df["refractive_worsening"]
-    ) / 2
+        df["myopia_level"] * (1 + df["refractive_worsening"] * 0.1)
+    )
 
     normalized_df["cvs_score"] = (
-        df["cvs_headache_strain"] + df["cvs_dry_eyes"]
-    ) / 2
+        df["cvs_headache_strain"] * (1 + df["cvs_dry_eyes"] * 0.1)
+    )
 
     normalized_df["astigmatism_score"] = (
         df["astigmatism_symptoms"] * (1 + df["myopia_level"] * 0.1)
@@ -150,22 +152,27 @@ def apply_smote_for_ml(df, primary_target):
     return balanced_df
 
 def main():
-    project_root = os.path.dirname(os.path.dirname(__file__))
-    input_csv = os.path.join(project_root, 'fake_survey_responses.csv')
-    output_csv_myopia = os.path.join(os.path.dirname(__file__), 'training_data_smote_myopia.csv')
-    output_csv_computervs = os.path.join(os.path.dirname(__file__), 'training_data_smote_computervs.csv')
-    output_csv_astigmatism = os.path.join(os.path.dirname(__file__), 'training_data_smote_astigmatism.csv')
+    parser = argparse.ArgumentParser(description='Encode survey CSV to ordinal values.')
+    parser.add_argument('--input_path', default='../OUTPUT.csv')
+    parser.add_argument('--output_prefix', default='training_data_smote_')
     
-    if not os.path.exists(input_csv):
-        print(f"Error: {input_csv} not found")
+    args = parser.parse_args()
+ 
+    input_path  = Path(args.input_path)
+    output_prefix = Path(args.output_prefix)
+
+    if not os.path.exists(input_path):
+        print(f"Error: {input_path} does not correlate to an adequate CSV file")
         return
     
     print("=" * 70)
     print("MACHINE LEARNING - SMOTE DATA AUGMENTATION")
+    print("The prefix is:")
+    print(output_prefix)
     print("=" * 70)
     
     print(f"\nLoading and normalizing survey responses...")
-    df = load_and_normalize_inputs(input_csv)
+    df = load_and_normalize_inputs(input_path)
     print(f"Loaded {len(df)} survey responses with 15 normalized inputs")
     
     print(f"\nApplying SMOTE with target: Myopia Score (Current Nearsightedness and Prescription Change)...")
@@ -174,9 +181,9 @@ def main():
     astigmatism_balanced_df = apply_smote_for_ml(df, primary_target="astigmatism_score")
     
     print(f"\nSaving balanced dataset...")
-    myopia_balanced_df.to_csv(output_csv_myopia, index=False)
-    computervs_balanced_df.to_csv(output_csv_computervs, index=False)
-    astigmatism_balanced_df.to_csv(output_csv_astigmatism, index=False)
+    myopia_balanced_df.to_csv(str(output_prefix) + "myopia.csv", index=False)
+    computervs_balanced_df.to_csv(str(output_prefix) + "computervs.csv", index=False)
+    astigmatism_balanced_df.to_csv(str(output_prefix) + "astigmatism.csv", index=False)
     
     print(f"Saved individual datasets into respective CSV files")
     

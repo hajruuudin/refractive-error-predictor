@@ -128,12 +128,12 @@ GENETICS = {
  
 # Q16 — myopia_level  (0–5)  ; "Unsure" → -1 (handle downstream)
 MYOPIA_LEVEL = {
-    '0.0 to -0.5 (No prescription or very mild blur — distant objects are mostly clear)': 0,
-    '-0.5 to -1.5 (Mild nearsightedness — distant signs and faces begin to blur noticeably': 1,
-    '-1.5 to -3.0 (Moderate nearsightedness — TV across a room or a whiteboard is difficult without correction)': 2,
-    "-3.0 to -4.5 (Strong nearsightedness — anything beyond arm's length is significantly blurred)": 3,
-    '-4.5 and below (Severe nearsightedness — functional vision without correction is very limited)': 4,
-    "Unsure (I have a prescription but don't remember the value, or I have a different type of error)": -1,
+    '0.0 to -0.5 (No prescription or very mild blur — distant objects are mostly clear)': 1,
+    '-0.5 to -1.5 (Mild nearsightedness — distant signs and faces begin to blur noticeably': 2,
+    '-1.5 to -3.0 (Moderate nearsightedness — TV across a room or a whiteboard is difficult without correction)': 3,
+    "-3.0 to -4.5 (Strong nearsightedness — anything beyond arm's length is significantly blurred)": 4,
+    '-4.5 and below (Severe nearsightedness — functional vision without correction is very limited)': 5,
+    "Unsure (I have a prescription but don't remember the value, or I have a different type of error)": 0,
 }
  
 # Q17 — refractive_worsening  (0–3)
