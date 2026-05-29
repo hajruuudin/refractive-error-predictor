@@ -69,7 +69,12 @@ class XGBoostTrainer:
 
         model = xgb.XGBRegressor(
             n_estimators=150,
-            learning_rate=0.1,
+            learning_rate=0.05,
+            max_depth=6,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.1,
+            reg_lambda=1.0,
             random_state=42,
             n_jobs=-1,
             verbosity=0

@@ -31,6 +31,7 @@ Some things to note:
       null columns for CVS ans Astigmatism being filled in using KNN.
 """
 
+from numpy.linalg import norm
 import pandas as pd
 import argparse
 import numpy as np
@@ -86,23 +87,110 @@ def load_and_normalize_inputs(csv_file):
         'age', 'gender', 'daily_screen_time', 'continuous_usage', 'intensity',
         'lighting', 'multi_device', 'phone_distance', 'monitor_distance',
         'blue_light_filter', 'before_bed_usage', 'profession', 'outdoor_activity',
-        'genetics', 'age_first_rx'
+        'genetics', 'age_first_rx', 'myopia_level', 'refractive_worsening', 'cvs_headache_strain',
+        'cvs_dry_eyes', 'astigmatism_symptoms'
     ]
     
     normalized_df = pd.DataFrame()
+
     for col in input_cols:
         normalized_df[col] = normalize_column(df[col])
+        
+
+    for col in input_cols:
+        value_counts = normalized_df[col].value_counts()
+        singleton_values = value_counts[value_counts == 1].index
+        normalized_df = normalized_df[~normalized_df[col].isin(singleton_values)]
+        
+        if len(singleton_values) > 0:
+            print(f"Removed {len(singleton_values)} singleton values from '{col}'")
+        
+  
+    # WEIGHTED AVERAGE APPROACH - OPTIMIZED WEIGHTS
+    # normalized_df["myopia_score"] = (
+    #     (normalized_df["myopia_level"]) * 0.25 + (normalized_df["refractive_worsening"]) * 0.75
+    # )
+
+    # normalized_df["cvs_score"] = (
+    #     (normalized_df["cvs_headache_strain"]) * 0.50 + (normalized_df["cvs_dry_eyes"]) * 0.50
+    # )
+
+    # normalized_df["astigmatism_score"] = (
+    #     (normalized_df["astigmatism_symptoms"]) * 0.30 + (normalized_df["myopia_level"]) * 0.70
+    # )
     
-    normalized_df["myopia_score"] = (
-        df["myopia_level"] * (1 + df["refractive_worsening"] * 0.1)
+    # POWER MEAN APPROACH (p=2 for Quadratic Mean / RMS)
+    # Emphasizes larger values, good for detecting severity
+    # p = 2
+    
+    # normalized_df["myopia_score"] = (
+    #     ((normalized_df["myopia_level"]**p + normalized_df["refractive_worsening"]**p) / 2) ** (1/p)
+    # )
+
+    # normalized_df["cvs_score"] = (
+    #     ((normalized_df["cvs_headache_strain"]**p + normalized_df["cvs_dry_eyes"]**p) / 2) ** (1/p)
+    # )
+
+    # normalized_df["astigmatism_score"] = (
+    #     ((normalized_df["astigmatism_symptoms"]**p + normalized_df["myopia_level"]**p) / 2) ** (1/p)
+    # )
+    
+    # GEOMETRIC MEAN APPROACH
+    # Captures multiplicative relationships between factors
+    # normalized_df["myopia_score"] = np.sqrt(
+    #     (normalized_df["myopia_level"]) * (normalized_df["refractive_worsening"] + 1e-6)
+    # )
+
+    # normalized_df["cvs_score"] = np.sqrt(
+    #     (normalized_df["cvs_headache_strain"]) * (normalized_df["cvs_dry_eyes"] + 1e-6)
+    # )
+
+    # normalized_df["astigmatism_score"] = np.sqrt(
+    #     (normalized_df["astigmatism_symptoms"]) * (normalized_df["myopia_level"] + 1e-6)
+    # )
+    
+    # NORMALIZED SUM APPROACH (Simple Arithmetic Mean)
+    # Equal weight averaging - simple and interpretable
+    # normalized_df["myopia_score"] = (
+    #     (normalized_df["myopia_level"] + normalized_df["refractive_worsening"]) / 2
+    # )
+
+    # normalized_df["cvs_score"] = (
+    #     (normalized_df["cvs_headache_strain"] + normalized_df["cvs_dry_eyes"]) / 2
+    # )
+
+    # normalized_df["astigmatism_score"] = (
+    #     (normalized_df["astigmatism_symptoms"] + normalized_df["myopia_level"]) / 2
+    # )
+    
+    # MAX DRIVEN WITH PENALTY APPROACH
+    # Uses maximum value but applies penalty if other factor is low
+    # normalized_df["myopia_score"] = np.maximum(
+    #     normalized_df["myopia_level"], normalized_df["refractive_worsening"]
+    # ) * (1 - 0.2 * (1 - np.minimum(normalized_df["myopia_level"], normalized_df["refractive_worsening"])))
+
+    # normalized_df["cvs_score"] = np.maximum(
+    #     normalized_df["cvs_headache_strain"], normalized_df["cvs_dry_eyes"]
+    # )
+
+    # normalized_df["astigmatism_score"] = np.where(
+    #     normalized_df["myopia_level"] == 0,
+    #     normalized_df["astigmatism_symptoms"] * 0.5,
+    #     normalized_df["astigmatism_symptoms"]
+    # )
+    
+    # HARMONIC MEAN APPROACH
+    # Penalizes low values heavily - requires both factors to be present
+    normalized_df["myopia_score"] = 2 / (
+        1 / (normalized_df["myopia_level"] + 1e-6) + 1 / (normalized_df["refractive_worsening"] + 1e-6)
     )
 
-    normalized_df["cvs_score"] = (
-        df["cvs_headache_strain"] * (1 + df["cvs_dry_eyes"] * 0.1)
+    normalized_df["cvs_score"] = 2 / (
+        1 / (normalized_df["cvs_headache_strain"] + 1e-6) + 1 / (normalized_df["cvs_dry_eyes"] + 1e-6)
     )
 
-    normalized_df["astigmatism_score"] = (
-        df["astigmatism_symptoms"] * (1 + df["myopia_level"] * 0.1)
+    normalized_df["astigmatism_score"] = 2 / (
+        1 / (normalized_df["astigmatism_symptoms"] + 1e-6) + 1 / (normalized_df["myopia_level"] + 1e-6)
     )
     
     return normalized_df
@@ -112,11 +200,12 @@ def apply_smote_for_ml(df, primary_target):
         'age', 'gender', 'daily_screen_time', 'continuous_usage', 'intensity',
         'lighting', 'multi_device', 'phone_distance', 'monitor_distance',
         'blue_light_filter', 'before_bed_usage', 'profession', 'outdoor_activity',
-        'genetics', 'age_first_rx'
+        'genetics', 'age_first_rx', 'myopia_level', 'refractive_worsening', 'cvs_headache_strain',
+        'cvs_dry_eyes', 'astigmatism_symptoms'
     ]
 
-    X = df[input_cols].copy()
-    y_continuous = df[primary_target].copy()
+    X = df[input_cols].copy().reset_index(drop=True)
+    y_continuous = df[primary_target].copy().reset_index(drop=True)
     
     # Convert continuous scores to ordinal integer classes (0 to 4)
     bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
@@ -124,9 +213,22 @@ def apply_smote_for_ml(df, primary_target):
     y = pd.cut(y_continuous, bins=bins, labels=labels, include_lowest=True)
     y = pd.factorize(y)[0]
 
-    print(f"  Class distribution before SMOTE (using {primary_target}):")
+    print(f"  Class distribution before filtering (using {primary_target}):")
     print(f"  {pd.Series(y).value_counts().sort_index().to_dict()}")
     print(f"  Total samples: {len(df)}")
+
+    # Remove classes with fewer than 2 samples (SMOTE needs at least 2 per class)
+    y_series = pd.Series(y, index=X.index)
+    class_counts = y_series.value_counts()
+    classes_to_keep = class_counts[class_counts >= 2].index
+    mask = y_series.isin(classes_to_keep)
+    X = X[mask].reset_index(drop=True)
+    y = y_series[mask].values
+    
+    print(f"  Removed classes with <2 samples")
+    print(f"  Class distribution after filtering (using {primary_target}):")
+    print(f"  {pd.Series(y).value_counts().sort_index().to_dict()}")
+    print(f"  Total samples: {len(X)}")
 
     min_class_size = pd.Series(y).value_counts().min()
     k_neighbors = max(1, min_class_size - 1)

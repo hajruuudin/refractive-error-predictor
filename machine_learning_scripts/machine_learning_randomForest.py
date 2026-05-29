@@ -47,7 +47,15 @@ class RandomForestTrainer:
             X, y, test_size=test_size, random_state=42
         )
 
-        model = RandomForestRegressor(n_estimators=150, random_state=42, n_jobs=-1)
+        model = RandomForestRegressor(
+            n_estimators=100, 
+            max_depth=10,
+            min_samples_leaf=5,
+            max_samples=0.8,
+            max_features='sqrt',
+            random_state=42, 
+            n_jobs=-1,
+            )
         model.fit(X_train, y_train)
 
         y_pred_test = model.predict(X_test)
