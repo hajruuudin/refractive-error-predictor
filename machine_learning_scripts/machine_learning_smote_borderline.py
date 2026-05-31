@@ -1,28 +1,3 @@
-"""
-PART 01E: Borderline SMOTE for Machine Learning Pipeline
-
-Borderline SMOTE variant that focuses on borderline minority samples.
-Instead of oversampling all minority samples, it identifies samples
-near the decision boundary (borderline samples) and generates synthetic
-samples near these critical regions. This approach is ideal for small
-datasets where focusing on difficult-to-classify samples is more
-valuable than blindly oversampling the entire minority class.
-
-Benefits:
-- Focuses on difficult-to-classify borderline samples
-- Better for small datasets (like our 81-sample survey)
-- Generates synthetic samples near decision boundaries
-- No clustering required (unlike KMeans SMOTE)
-- More efficient than vanilla SMOTE for small data
-
-The script follows the same logic as other SMOTE variants:
-1. Load and normalize inputs
-2. Remove singleton values
-3. Create target scores using WEIGHTED AVERAGE formula
-4. Apply Borderline SMOTE to balance classes
-5. Output three CSV files for each target variable
-"""
-
 from numpy.linalg import norm
 import pandas as pd
 import argparse
@@ -30,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from imblearn.over_sampling import BorderlineSMOTE
 import os
+from target_equations import TargetEquations
 
 def normalize_column(col):
     min_val = col.min()
@@ -98,22 +74,48 @@ def load_and_normalize_inputs(csv_file):
             print(f"Removed {len(singleton_values)} singleton values from '{col}'")
         
   
-    # WEIGHTED AVERAGE APPROACH - OPTIMIZED WEIGHTS
-    # Myopia: 25% myopia_level + 75% refractive_worsening
-    # CVS: 50% headaches + 50% dry eyes
-    # Astigmatism: 50% symptoms + 50% myopia
+    # WEIGHTED AVERAGE APPROACH
+    (
+    normalized_df["myopia_score"],
+    normalized_df["computervs_score"],
+    normalized_df["astigmatism_score"]
+    ) = TargetEquations.calculate_weighted_average(normalized_df)
     
-    normalized_df["myopia_score"] = (
-        (normalized_df["myopia_level"]) * 0.25 + (normalized_df["refractive_worsening"]) * 0.75
-    )
+    # # POWER MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_power_mean(normalized_df)
+   
+    
+    # # GEOMETRIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_geometric_mean(normalized_df)
+   
+    # # NORMALISED MEAN APPROACT
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_normalized_sum(normalized_df)
 
-    normalized_df["cvs_score"] = (
-        (normalized_df["cvs_headache_strain"]) * 0.50 + (normalized_df["cvs_dry_eyes"]) * 0.50
-    )
-
-    normalized_df["astigmatism_score"] = (
-        (normalized_df["astigmatism_symptoms"]) * 0.50 + (normalized_df["myopia_level"]) * 0.50
-    )
+    # # MAX PENALTY APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_max_penalty(normalized_df)
+   
+    # # HARMONIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_harmonic_mean(normalized_df)
     
     return normalized_df
 

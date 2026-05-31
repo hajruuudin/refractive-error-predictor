@@ -1,20 +1,3 @@
-"""
-PART 01C: SMOTE-EEN for Machine Learning Pipeline
-
-SMOTE-EEN (SMOTE + Edited Nearest Neighbors) hybrid variant.
-This combines SMOTE oversampling with ENN cleaning strategy:
-1. SMOTE generates synthetic minority samples
-2. ENN removes noisy samples near decision boundaries
-Result: Cleaner, more robust oversampling
-
-The script follows the same logic as vanilla SMOTE and SMOTE-NC:
-1. Load and normalize inputs
-2. Remove singleton values
-3. Create target scores using WEIGHTED AVERAGE formula
-4. Apply SMOTE-EEN to balance and clean classes
-5. Output three CSV files for each target variable
-"""
-
 from numpy.linalg import norm
 import pandas as pd
 import argparse
@@ -23,6 +6,7 @@ from pathlib import Path
 from imblearn.combine import SMOTEENN
 from imblearn.over_sampling import SMOTE
 import os
+from target_equations import TargetEquations
 
 def normalize_column(col):
     min_val = col.min()
@@ -90,23 +74,48 @@ def load_and_normalize_inputs(csv_file):
         if len(singleton_values) > 0:
             print(f"Removed {len(singleton_values)} singleton values from '{col}'")
         
-  
-    # WEIGHTED AVERAGE APPROACH - OPTIMIZED WEIGHTS
-    # Myopia: 25% myopia_level + 75% refractive_worsening
-    # CVS: 50% headaches + 50% dry eyes
-    # Astigmatism: 50% symptoms + 50% myopia
+    # WEIGHTED AVERAGE APPROACH
+    (
+    normalized_df["myopia_score"],
+    normalized_df["computervs_score"],
+    normalized_df["astigmatism_score"]
+    ) = TargetEquations.calculate_weighted_average(normalized_df)
     
-    normalized_df["myopia_score"] = (
-        (normalized_df["myopia_level"]) * 0.25 + (normalized_df["refractive_worsening"]) * 0.75
-    )
+    # # POWER MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_power_mean(normalized_df)
+   
+    
+    # # GEOMETRIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_geometric_mean(normalized_df)
+   
+    # # NORMALISED MEAN APPROACT
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_normalized_sum(normalized_df)
 
-    normalized_df["cvs_score"] = (
-        (normalized_df["cvs_headache_strain"]) * 0.50 + (normalized_df["cvs_dry_eyes"]) * 0.50
-    )
-
-    normalized_df["astigmatism_score"] = (
-        (normalized_df["astigmatism_symptoms"]) * 0.50 + (normalized_df["myopia_level"]) * 0.50
-    )
+    # # MAX PENALTY APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_max_penalty(normalized_df)
+   
+    # # HARMONIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_harmonic_mean(normalized_df)
     
     return normalized_df
 

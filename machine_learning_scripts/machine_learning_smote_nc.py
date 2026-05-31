@@ -1,21 +1,3 @@
-"""
-PART 01B: SMOTE-NC for Machine Learning Pipeline
-
-SMOTE-NC (SMOTE Nominal and Continuous) variant for handling mixed data types.
-This script handles both categorical and continuous features explicitly,
-unlike vanilla SMOTE which only handles continuous data.
-
-Categorical features: gender, profession
-Continuous features: all others (normalized 0-1)
-
-The script otherwise follows the same logic as vanilla SMOTE:
-1. Load and normalize inputs
-2. Remove singleton values
-3. Create target scores using WEIGHTED AVERAGE formula
-4. Apply SMOTE-NC to balance classes
-5. Output three CSV files for each target variable
-"""
-
 from numpy.linalg import norm
 import pandas as pd
 import argparse
@@ -23,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from imblearn.over_sampling import SMOTENC
 import os
+from target_equations import TargetEquations
 
 def normalize_column(col):
     min_val = col.min()
@@ -91,23 +74,49 @@ def load_and_normalize_inputs(csv_file):
             print(f"Removed {len(singleton_values)} singleton values from '{col}'")
         
   
-    # WEIGHTED AVERAGE APPROACH - OPTIMIZED WEIGHTS
-    # Myopia: 25% myopia_level + 75% refractive_worsening
-    # CVS: 50% headaches + 50% dry eyes
-    # Astigmatism: 50% symptoms + 50% myopia
+    # WEIGHTED AVERAGE APPROACH
+    (
+    normalized_df["myopia_score"],
+    normalized_df["computervs_score"],
+    normalized_df["astigmatism_score"]
+    ) = TargetEquations.calculate_weighted_average(normalized_df)
     
-    normalized_df["myopia_score"] = (
-        (normalized_df["myopia_level"]) * 0.25 + (normalized_df["refractive_worsening"]) * 0.75
-    )
-
-    normalized_df["cvs_score"] = (
-        (normalized_df["cvs_headache_strain"]) * 0.50 + (normalized_df["cvs_dry_eyes"]) * 0.50
-    )
-
-    normalized_df["astigmatism_score"] = (
-        (normalized_df["astigmatism_symptoms"]) * 0.50 + (normalized_df["myopia_level"]) * 0.50
-    )
+    # # POWER MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_power_mean(normalized_df)
+   
     
+    # # GEOMETRIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_geometric_mean(normalized_df)
+   
+    # # NORMALISED MEAN APPROACT
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_normalized_sum(normalized_df)
+
+    # # MAX PENALTY APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_max_penalty(normalized_df)
+   
+    # # HARMONIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_harmonic_mean(normalized_df)
+
     return normalized_df
 
 def apply_smote_nc_for_ml(df, primary_target):

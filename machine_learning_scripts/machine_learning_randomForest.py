@@ -1,17 +1,3 @@
-"""
-PART 02A: RANDOM FOREST MODEL TRAINING
-
-This script trains Random Forest regression models for each of the three composite targets (Myopia Score, 
-CVS Score, Astigmatism Score) using the SMOTE-balanced datasets created in the previous script. 
-The script performs the following steps for each target:
-1. Loads the corresponding SMOTE-balanced CSV file
-2. Splits the data into training and testing sets
-3. Trains a Random Forest Regressor on the training data
-4. Evaluates the model using three metrics: MAE, R², and 5-fold cross-validated MAE
-5. Extracts and saves feature importance for each model
-6. Saves predictions vs actuals for the test set
-"""
-
 import pandas as pd
 import numpy as np
 import os

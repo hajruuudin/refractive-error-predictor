@@ -1,35 +1,4 @@
-"""
-PART 01: SMOTE for Machine Learning Pipeline
 
-For the ML model, SMOTE is required due to the expected small size in the dataset, as well as to fix underlying imbalance problems
-for the minority classes. The following script evens out the dataset and prepares three individual CSV files 
-which are later used as data inputs for the ML model training, each of which are extended
-based on one of the three expected target variables (MYOPIA, CSV OR ASTIGMATISM). The reason why we create three individual
-dataset instead of using K-Nearest-Neighbour for the missing target data is due to the small size of the input survey. This is
-to avoid noisy data and inaccurate/non-sensible values for the remaining target variables.
-
-The following script works in the steps in order:
-    1. Load the original CSV file containing the survey samples (or the fake responses just for testing purposes)
-    2. The inputs are normalised, so that the values are not categorical but rather all ordinal from 0.0 to 1.0
-    3. The target columns are aggregated so that we have 3 targets instead of 5
-    4. Then, the SMOTE process is applied three consecutive times, all separate
-        First for Myopia, then for CVS and then or Astigmatism
-    5. SMOTE is set up so that the K-neighbours variables is by default 3, however, can
-        drop to 2 if the minority class does not have enough instances (can cause detriments to the effect tho)
-    6. The process is repeated 3 times, once for each target
-    7. The result is three CSV files. Each of them is used later for training of ML models.
-
-Some things to note:
-    - The functions that aggregate the 5 target variables into three are as follows:
-        - For Myopia: It is the average of the current nearsightedness score and the worsening of the individuals eyesight in the last 2 years
-        - For Computer Vision Syndrome: It is the average of the frequency of experiencing headaches and digital strain
-        - For astigmatism: It is the astigmatism symptoms with an addition of 10% of the users nearsightedness score
-      Each of the formulas can be changed and it changes the overall target
-    - In this current setup, there is no usage of K-Nearest-Neighbour. The reason for this is the lack
-      of size in the input survey. A usage of KNN would mean narrowing the dataset down into one cohesive
-      dataset, where the SMOTE process is used only with Myopia Score as the target, with the remaining
-      null columns for CVS ans Astigmatism being filled in using KNN.
-"""
 
 from numpy.linalg import norm
 import pandas as pd
@@ -38,6 +7,7 @@ import numpy as np
 from pathlib import Path
 from imblearn.over_sampling import SMOTE
 import os
+from target_equations import TargetEquations
 
 def normalize_column(col):
     min_val = col.min()
@@ -105,93 +75,48 @@ def load_and_normalize_inputs(csv_file):
         if len(singleton_values) > 0:
             print(f"Removed {len(singleton_values)} singleton values from '{col}'")
         
-  
-    # WEIGHTED AVERAGE APPROACH - OPTIMIZED WEIGHTS
-    # normalized_df["myopia_score"] = (
-    #     (normalized_df["myopia_level"]) * 0.25 + (normalized_df["refractive_worsening"]) * 0.75
-    # )
-
-    # normalized_df["cvs_score"] = (
-    #     (normalized_df["cvs_headache_strain"]) * 0.50 + (normalized_df["cvs_dry_eyes"]) * 0.50
-    # )
-
-    # normalized_df["astigmatism_score"] = (
-    #     (normalized_df["astigmatism_symptoms"]) * 0.30 + (normalized_df["myopia_level"]) * 0.70
-    # )
+    # WEIGHTED AVERAGE APPROACH
+    (
+    normalized_df["myopia_score"],
+    normalized_df["computervs_score"],
+    normalized_df["astigmatism_score"]
+    ) = TargetEquations.calculate_weighted_average(normalized_df)
     
-    # POWER MEAN APPROACH (p=2 for Quadratic Mean / RMS)
-    # Emphasizes larger values, good for detecting severity
-    # p = 2
+    # # POWER MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_power_mean(normalized_df)
+   
     
-    # normalized_df["myopia_score"] = (
-    #     ((normalized_df["myopia_level"]**p + normalized_df["refractive_worsening"]**p) / 2) ** (1/p)
-    # )
+    # # GEOMETRIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_geometric_mean(normalized_df)
+   
+    # # NORMALISED MEAN APPROACT
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_normalized_sum(normalized_df)
 
-    # normalized_df["cvs_score"] = (
-    #     ((normalized_df["cvs_headache_strain"]**p + normalized_df["cvs_dry_eyes"]**p) / 2) ** (1/p)
-    # )
-
-    # normalized_df["astigmatism_score"] = (
-    #     ((normalized_df["astigmatism_symptoms"]**p + normalized_df["myopia_level"]**p) / 2) ** (1/p)
-    # )
-    
-    # GEOMETRIC MEAN APPROACH
-    # Captures multiplicative relationships between factors
-    # normalized_df["myopia_score"] = np.sqrt(
-    #     (normalized_df["myopia_level"]) * (normalized_df["refractive_worsening"] + 1e-6)
-    # )
-
-    # normalized_df["cvs_score"] = np.sqrt(
-    #     (normalized_df["cvs_headache_strain"]) * (normalized_df["cvs_dry_eyes"] + 1e-6)
-    # )
-
-    # normalized_df["astigmatism_score"] = np.sqrt(
-    #     (normalized_df["astigmatism_symptoms"]) * (normalized_df["myopia_level"] + 1e-6)
-    # )
-    
-    # NORMALIZED SUM APPROACH (Simple Arithmetic Mean)
-    # Equal weight averaging - simple and interpretable
-    # normalized_df["myopia_score"] = (
-    #     (normalized_df["myopia_level"] + normalized_df["refractive_worsening"]) / 2
-    # )
-
-    # normalized_df["cvs_score"] = (
-    #     (normalized_df["cvs_headache_strain"] + normalized_df["cvs_dry_eyes"]) / 2
-    # )
-
-    # normalized_df["astigmatism_score"] = (
-    #     (normalized_df["astigmatism_symptoms"] + normalized_df["myopia_level"]) / 2
-    # )
-    
-    # MAX DRIVEN WITH PENALTY APPROACH
-    # Uses maximum value but applies penalty if other factor is low
-    # normalized_df["myopia_score"] = np.maximum(
-    #     normalized_df["myopia_level"], normalized_df["refractive_worsening"]
-    # ) * (1 - 0.2 * (1 - np.minimum(normalized_df["myopia_level"], normalized_df["refractive_worsening"])))
-
-    # normalized_df["cvs_score"] = np.maximum(
-    #     normalized_df["cvs_headache_strain"], normalized_df["cvs_dry_eyes"]
-    # )
-
-    # normalized_df["astigmatism_score"] = np.where(
-    #     normalized_df["myopia_level"] == 0,
-    #     normalized_df["astigmatism_symptoms"] * 0.5,
-    #     normalized_df["astigmatism_symptoms"]
-    # )
-    
-    # HARMONIC MEAN APPROACH
-    # Penalizes low values heavily - requires both factors to be present
-    normalized_df["myopia_score"] = 2 / (
-        1 / (normalized_df["myopia_level"] + 1e-6) + 1 / (normalized_df["refractive_worsening"] + 1e-6)
-    )
-
-    normalized_df["cvs_score"] = 2 / (
-        1 / (normalized_df["cvs_headache_strain"] + 1e-6) + 1 / (normalized_df["cvs_dry_eyes"] + 1e-6)
-    )
-
-    normalized_df["astigmatism_score"] = 2 / (
-        1 / (normalized_df["astigmatism_symptoms"] + 1e-6) + 1 / (normalized_df["myopia_level"] + 1e-6)
-    )
+    # # MAX PENALTY APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_max_penalty(normalized_df)
+   
+    # # HARMONIC MEAN APPROACH
+    # (
+    # normalized_df["myopia_score"],
+    # normalized_df["computervs_score"],
+    # normalized_df["astigmatism_score"]
+    # ) = TargetEquations.calculate_harmonic_mean(normalized_df)
     
     return normalized_df
 
