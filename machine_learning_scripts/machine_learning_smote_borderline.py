@@ -1,3 +1,16 @@
+"""
+==== Borderline SMOTE ====
+
+This variation of SMOTE works similarly to regular SMOTE, with one key difference. 
+Instead of generating synthetic samples across all minority samples, Borderline SMOTE focuses on 
+the "borderline" samples. These are the samples that are more difficult to classify 
+because they are close to the decision boundary between classes. By generating 
+synthetic samples around these borderline cases, Borderline SMOTE aims to improve the classifier's 
+ability to learn from these critical examples, potentially leading to better performance on 
+imbalanced datasets.
+"""
+
+
 from numpy.linalg import norm
 import pandas as pd
 import argparse

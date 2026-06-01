@@ -1,4 +1,27 @@
+"""
+==== VANILLA SMOTE OVERSAMPLING ====
 
+This is the basic and most common form of SMOTE found in many oversampling techniques. The approach 
+takes two or more existing samples from the minority class (depending on the k variable) and generates
+a synthetic sample between them based on their coordinates. It does this for every possible regressor
+variable within the context of the data given. The number of data samples generated depends on the setup, but
+with the default configuration as specified here the number of samples will be enough so that each
+class has the same amount of respondents in order to train the model for all posibilities equally.
+
+The concept follows:
+1. From the arguments passed (the input passed and the output passed, or with the defaults given within
+this file) take both the INPUT file and name the OUTPUT to which the results will be written
+2. After that, take the input file and normalise the input and target variables from the survey from
+the ordinal Likeart scale to 0.0 - 1.0 values. This is to ensure that we do not have dominant values
+within the context of this work.
+3. After normalisation, do aggregation of the target variables using one of the 6 specified formulas
+given in the "target_equations.py" file.
+4. After target aggregation, the SMOTE process is performed. The result is three files each of which serves
+for one specific target (MYO, CVS or AST).
+
+The same concept applies for the other 4 SMOTE variations. The only exception is the nature of synthetic
+sample generation. 
+"""
 
 from numpy.linalg import norm
 import pandas as pd

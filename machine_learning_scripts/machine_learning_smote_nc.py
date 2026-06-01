@@ -1,3 +1,15 @@
+"""
+==== SMOTE for Nominal & Continous Variables ====
+
+This variation of SMOTE works better for nominal or continuous variables. Instead of generating 
+random points between two specified existing points, this method generates random values which
+fall into one of the potential categories which already exist given within the survey.
+
+This ensures no values which have no meaning within the context of the data is given. For example,
+a value between 1 and 7 might be 4.56 in regular SMOTE. Meanwhile, for potential values of 1,2,3,4,5 
+within SMOTE-NC, only those specific values can be generated.
+"""
+
 from numpy.linalg import norm
 import pandas as pd
 import argparse

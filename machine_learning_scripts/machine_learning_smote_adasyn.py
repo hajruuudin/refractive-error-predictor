@@ -1,3 +1,19 @@
+"""
+==== ADASYN - Adaptive Synthetic Over-sampling ====
+
+This variation of SMOTE works similarly to regular SMOTE, with one key difference. Instead of
+generating synthetic samples uniformly across the minority class,
+ADASYN focuses on generating more synthetic samples for those minority class samples that are harder 
+to learn. It does this by adaptively adjusting the number of synthetic samples generated for each 
+minority class sample based on the level of difficulty in learning that sample.
+This approach aims to improve the classifier's performance by focusing on the more challenging examples,
+potentially leading to better generalization on imbalanced datasets. Note that
+due to the small sample size of the original survey and the nature of this approach, some of 
+the samples had to be done with vanilla SMOTE instead of ADASYN, as ADASYN requires at least 2 samples per 
+class to function properly.
+"""
+
+
 from numpy.linalg import norm
 import pandas as pd
 import argparse

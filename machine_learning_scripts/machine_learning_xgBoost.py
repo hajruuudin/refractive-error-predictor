@@ -1,3 +1,26 @@
+"""
+
+XGBoost Regression pipeline for predicting myopia_score, cvs_score, and astigmatism_score.
+
+This script trains separate XGBoost regression models for each of the three composite targets using 
+the SMOTE-balanced datasets. It evaluates model performance using MAE, R², and 
+cross-validated MAE, and saves feature importance and predictions to CSV files.
+
+Note that the same setup of the XGBoost model is used for all three targets to allow for 
+a fair comparison of results. The setup includes:
+- n_estimators=150: A higher number of trees to capture complex relationships in the data.
+- learning_rate=0.05: A smaller learning rate to allow the model to learn more gradually and potentially achieve better performance.
+- max_depth=6: Limits tree depth to prevent overfitting while still allowing for some complexity.
+- subsample=0.8: Each tree is trained on a random 80% subset of the data to increase diversity among trees and reduce overfitting.
+- colsample_bytree=0.8: Each tree considers a random 80% subset of features when looking for the best split, which also helps to reduce overfitting and improve generalization.
+- reg_alpha=0.1 and reg_lambda=1.0: L1 and L2 regularization to further prevent overfitting by penalizing large coefficients.
+- random_state=42: Ensures reproducibility of results.
+- n_jobs=-1: Utilizes all available CPU cores for faster training.
+- verbosity=0: Suppresses training logs for cleaner output.
+
+A train/test split of 80/20 is used for evaluation.
+"""
+
 import pandas as pd
 import numpy as np
 import os

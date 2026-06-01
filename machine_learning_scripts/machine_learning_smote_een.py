@@ -1,3 +1,19 @@
+"""
+==== SMOTE with Edited Nearest Neighbour Clensing ====
+
+This variation of SMOTE does the same exact process as regular SMOTE (or SMOTE NC), with one additional feature.
+After performing synthetic generation, SMOTE EEN runs an Edited NEarest Neighbour clensing process, where
+it checks each new synthetic sample against its surrounding samples. In the case where it finds
+that the majority of the samples found within the neighbours are different from the newly generated
+sample, it determines that the new sample is an outlier and only causes noise instead of helping 
+the overall final predictions.
+
+SMOTE-EEN turned out to be the most effective approach used within this survey paper. However, note that
+the small sample size of the original survey and the nature of this approach means that some of the 
+predictive accuracy could be mistaken for a combination of luck and the relatively small size of the dataset.
+"""
+
+
 from numpy.linalg import norm
 import pandas as pd
 import argparse
