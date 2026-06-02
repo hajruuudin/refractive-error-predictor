@@ -95,7 +95,7 @@ def load_and_normalize_inputs(csv_file):
     normalized_df["myopia_score"],
     normalized_df["computervs_score"],
     normalized_df["astigmatism_score"]
-    ) = TargetEquations.calculate_weighted_average(normalized_df)
+    ) = TargetEquations.calculate_weighted_average(self=TargetEquations, normalized_df=normalized_df)
     
     # # POWER MEAN APPROACH
     # (
