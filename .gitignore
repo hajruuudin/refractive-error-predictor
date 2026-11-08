@@ -1,3 +1,8 @@
-venv/
-PROMPTING_INFO.md
+.venv/
 **/*.csv
+framework_01/preprocessing_output
+framework_02/preprocessing_output
+framework_01/datasets
+framework_02/datasets
+framework_01/results
+framework_02/results
